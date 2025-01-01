@@ -58,6 +58,7 @@ const Welcome = () => {
   const [isModalVisible, setisModalVisible] = useState(false);
   const [accStatus, setAccStatus] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [state, dispatch] = useReducer(reducer, initialState);
   const [pin, setPin] = useState("");
   const [step, setStep] = useState(1);
@@ -128,22 +129,25 @@ const Welcome = () => {
           />
           <TextInput
             style={styles.input}
-            onChangeText={(val) => setEmail(val)}
-            value={email}
+            onChangeText={(val) => setPassword(val)}
+            value={password}
             placeholder="Password"
             autoComplete="email"
             placeholderTextColor="rgba(0, 0, 0, 0.5)"
+            secureTextEntry={true}
           />
           <Pressable
+            disabled={!email.trim().length || !password.trim().length}
             style={({ pressed }) => [
               styles.signInSignUp,
+              (!email.trim() || !password.trim()) && styles.disabledButton,
               pressed && styles.buttonPressed,
             ]}
           >
             <Text style={styles.buttonText}>Sign in</Text>
           </Pressable>
         </View>
-        <View style={{ margin: 20 }}>
+        <View style={{ margin: 10 }}>
           <Pressable
             style={({ pressed }) => [
               styles.button,
@@ -184,16 +188,14 @@ const Welcome = () => {
                 fontWeight: 700,
                 textAlign: "center",
                 paddingBottom: "40",
+                marginTop: 40,
               }}
             >
               Lets create an account for you!
             </Text>
-            <ProgressSteps  activeStep={step - 1}>
+            <ProgressSteps activeStep={step - 1}>
               {/* Step 1: Name and Contact Number */}
-              <ProgressStep
-                label="Name & Contact"
-                removeBtnRow
-              >
+              <ProgressStep label="Name & Contact" removeBtnRow>
                 <View style={styles.stepContainer}>
                   <Text>Enter Name:</Text>
                   <TextInput
@@ -204,6 +206,7 @@ const Welcome = () => {
                     value={state.name}
                     placeholder="Enter Name"
                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
+                    secureTextEntry={false}
                   />
 
                   <Text>Enter Contact Number:</Text>
@@ -233,23 +236,27 @@ const Welcome = () => {
               </ProgressStep>
 
               {/* Step 2: City and State */}
-              <ProgressStep
-                label="City & State"
-                removeBtnRow
-              >
+              <ProgressStep label="City & State" removeBtnRow>
                 <View style={styles.stepContainer}>
                   <Text>Enter PIN to fill City and State:</Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={(val) =>
-                      setPin(val)
-                    }
+                    onChangeText={(val) => setPin(val)}
                     onBlur={fetchCityAndState}
                     value={pin}
                     placeholder="Enter State"
                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
                   />
-                  <Text style={{ fontSize : 18, fontWeight : 'bold', textDecorationColor : 'black', textDecorationStyle : 'underline' }}>OR</Text>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      textDecorationColor: "black",
+                      textDecorationStyle: "underline",
+                    }}
+                  >
+                    OR
+                  </Text>
                   <Text>Enter City:</Text>
                   <TextInput
                     style={styles.input}
@@ -275,10 +282,7 @@ const Welcome = () => {
               </ProgressStep>
 
               {/* Step 3: Password and Confirm Password */}
-              <ProgressStep
-                label="Password"
-                removeBtnRow
-              >
+              <ProgressStep label="Password" removeBtnRow>
                 <View style={styles.stepContainer}>
                   <Text>Enter Password:</Text>
                   <TextInput
@@ -326,8 +330,13 @@ const Welcome = () => {
                   <Text style={styles.buttonText}>Submit</Text>
                 </Pressable>
               )}
+              <Pressable
+                style={styles.button}
+                onPress={() => setisModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
+              </Pressable>
             </View>
-            <Button title="Go back" onPress={() => setisModalVisible(false)} />
           </View>
         </View>
       </Modal>
@@ -337,7 +346,7 @@ const Welcome = () => {
 
 const styles = StyleSheet.create({
   welcomeBox: {
-    height: "60%",
+    height: "50%",
     width: "100%",
     backgroundColor: "#768E7F",
     position: "absolute",
@@ -357,7 +366,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 400,
     textAlign: "center",
-    paddingBottom: 15,
+    paddingBottom: 5,
   },
   button: {
     backgroundColor: "#0D3029",
@@ -380,7 +389,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "bold"
   },
   buttonPressed: {
     opacity: 0.4,
@@ -412,12 +421,15 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "column",
-    marginBottom: 205,
+    marginBottom: 125,
   },
   stepContainer: {
     display: "flex",
     alignItems: "center",
     marginTop: 20,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
