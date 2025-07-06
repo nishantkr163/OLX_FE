@@ -1,7 +1,7 @@
 import React, { useReducer } from "react";
-import axios from "axios";
 import { useState } from "react";
 import { ProgressSteps, ProgressStep } from "react-native-progress-steps";
+import { fetchCityAndState } from '../Service/service';
 import {
   View,
   ImageBackground,
@@ -11,10 +11,9 @@ import {
   Animated,
   useWindowDimensions,
   Modal,
-  TextInput,
-  Button,
-  Switch,
+  TextInput
 } from "react-native";
+import Loader from "@/Component/Loader";
 const landingImage = require("../assets/LandingImage1.png");
 const signUpOrSignInImage = require("../assets/createAcc.png");
 
@@ -56,12 +55,13 @@ const Welcome = () => {
   const { height, width } = useWindowDimensions();
   const animateView = useState(new Animated.Value(-height))[0];
   const [isModalVisible, setisModalVisible] = useState(false);
-  const [accStatus, setAccStatus] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [state, dispatch] = useReducer(reducer, initialState);
   const [pin, setPin] = useState("");
   const [step, setStep] = useState(1);
+  const [loader, setLoader] = useState(false);
+  const [confirmPass, setConfirmPass] = useState("");
 
   const nextStep = () => {
     if (step < 3) setStep(step + 1);
@@ -69,6 +69,26 @@ const Welcome = () => {
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1);
+  };
+
+  const isStepValid = () => {
+    if (step === 1) {
+      return state.name.trim() !== "" && state.contactNumber.trim() !== "" && state.contactNumber.trim().length == 10;
+    }
+    if (step === 2) {
+      // return state.city.trim() !== "" && state.state.trim() !== "";
+      return true
+    }
+    return true;
+  };
+
+  const isValidPassword = (password, confirmPassword) => {
+    if (password !== confirmPassword) return false;
+  
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).{8,}$/;
+  
+    return passwordRegex.test(password);
   };
 
   function start() {
@@ -79,18 +99,16 @@ const Welcome = () => {
     }).start();
   }
 
-  const fetchCityAndState = async () => {
+  const fetchAddress = async () => {
     try {
-      const response = await axios.get(`http://postalpincode.in/api/pincode/${pin}`);
-      console.log(response.data);
-      if(response.data) {
-        let city = response.data["PostOffice"][0]["District"]
-        let state = response.data["PostOffice"][0]["State"]
-        dispatch({ type: "SET_CITY", payload: city })
-        dispatch({ type: "SET_STATE", payload: state })
-      }
+      setLoader(true);
+      const { city, state } = await fetchCityAndState(pin);
+      dispatch({ type: 'SET_CITY', payload: city });
+      dispatch({ type: 'SET_STATE', payload: state });
     } catch (error) {
-      console.error('API call error:', error);
+      console.error('Error fetching city and state:', error);
+    } finally {
+      setLoader(false);
     }
   }
 
@@ -167,6 +185,7 @@ const Welcome = () => {
         }}
         presentationStyle="pageSheet"
       >
+        { loader ? <Loader /> : null }
         {/* Wrapping everything inside a View */}
         <View style={{ flex: 1 }}>
           {/* ImageBackground is now absolutely positioned */}
@@ -237,43 +256,41 @@ const Welcome = () => {
 
               {/* Step 2: City and State */}
               <ProgressStep label="City & State" removeBtnRow>
-                <View style={styles.stepContainer}>
+                <View style={styles.stepContainer}>      
                   <Text>Enter PIN to fill City and State:</Text>
-                  <TextInput
-                    style={styles.input}
-                    onChangeText={(val) => setPin(val)}
-                    onBlur={fetchCityAndState}
-                    value={pin}
-                    placeholder="Enter State"
-                    placeholderTextColor="rgba(0, 0, 0, 0.5)"
-                  />
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: "bold",
-                      textDecorationColor: "black",
-                      textDecorationStyle: "underline",
-                    }}
-                  >
-                    OR
-                  </Text>
-                  <Text>Enter City:</Text>
+                  <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' , width : "55%" }} >
+                    <TextInput
+                      style={[styles.input,{ width: '70%' }]}
+                      onChangeText={(val) => setPin(val)}
+                      value={pin}
+                      placeholder="Enter PIN"
+                      placeholderTextColor="rgba(0, 0, 0, 0.5)"
+                    />
+                    <Pressable
+                      style={[styles.button, { width : '20%' }]}
+                      onPress={() => fetchAddress()}
+                    >
+                      <Text style={styles.buttonText}>S</Text>
+                    </Pressable>
+                  </View>
+                  <Text>Your City:</Text>
                   <TextInput
                     style={styles.input}
                     onChangeText={(val) =>
                       dispatch({ type: "SET_CITY", payload: val })
                     }
+                    editable={false}
                     value={state.city}
                     placeholder="Enter City"
                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
                   />
-
-                  <Text>Enter State:</Text>
+                  <Text>Your State:</Text>
                   <TextInput
                     style={styles.input}
                     onChangeText={(val) =>
                       dispatch({ type: "SET_STATE", payload: val })
                     }
+                    editable={false}
                     value={state.state}
                     placeholder="Enter State"
                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
@@ -284,7 +301,7 @@ const Welcome = () => {
               {/* Step 3: Password and Confirm Password */}
               <ProgressStep label="Password" removeBtnRow>
                 <View style={styles.stepContainer}>
-                  <Text>Enter Password:</Text>
+                  <Text>Create a Password:</Text>
                   <TextInput
                     style={styles.input}
                     onChangeText={(val) =>
@@ -307,6 +324,12 @@ const Welcome = () => {
                     secureTextEntry
                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
                   />
+
+                  {state.password && state.confirmPassword && !isValidPassword(state.password, state.confirmPassword) && (
+                    <Text style={{ color: 'black', textAlign : 'center', textShadowColor: 'black', textShadowRadius : 1, padding : 20 }}>
+                      Passwords must match and include upper, lower, number & special char.
+                    </Text>
+                  )}
                 </View>
               </ProgressStep>
             </ProgressSteps>
@@ -318,16 +341,22 @@ const Welcome = () => {
                 </Pressable>
               )}
               {step < 3 && (
-                <Pressable style={styles.button} onPress={nextStep}>
+                <Pressable style={[styles.button, !isStepValid() && styles.disabledButton]} onPress={nextStep} disabled={!isStepValid()}>
                   <Text style={styles.buttonText}>Next</Text>
                 </Pressable>
               )}
               {step === 3 && (
                 <Pressable
-                  style={styles.button}
+                  style={[
+                    styles.button,
+                    !isValidPassword(state.password, state.confirmPassword) && styles.disabledButton,
+                  ]}
+                  disabled={!isValidPassword(state.password, state.confirmPassword)}
                   onPress={() => console.log("Submitted", state)}
                 >
-                  <Text style={styles.buttonText}>Submit</Text>
+                  <Text style={styles.buttonText}>
+                    Submit
+                  </Text>
                 </Pressable>
               )}
               <Pressable
