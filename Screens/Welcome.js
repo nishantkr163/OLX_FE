@@ -76,8 +76,7 @@ const Welcome = () => {
       return state.name.trim() !== "" && state.contactNumber.trim() !== "" && state.contactNumber.trim().length == 10;
     }
     if (step === 2) {
-      // return state.city.trim() !== "" && state.state.trim() !== "";
-      return true
+      return state.city.trim() !== "" && state.state.trim() !== "";
     }
     return true;
   };
